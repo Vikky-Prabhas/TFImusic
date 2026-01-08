@@ -175,7 +175,7 @@ export function DesktopPlayer({
                                         {currentSong ? decodeHtml(currentSong.name) : cassetteTitle || "Untitled"}
                                     </p>
                                     <p className="text-gray-500 text-[9px] font-bold leading-normal truncate transform rotate-180 font-mono tracking-widest pt-0.5">
-                                        {currentSong ? decodeHtml(currentSong.primaryArtists) : "TFI TAPES"}
+                                        {currentSong ? decodeHtml(currentSong.primaryArtists) : "TFI STEREO"}
                                     </p>
                                 </div>
 

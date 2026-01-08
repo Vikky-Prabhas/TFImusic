@@ -124,7 +124,7 @@ export const AudioPlayer = forwardRef<AudioPlayerRef, AudioPlayerProps>(({
         navigator.mediaSession.metadata = new MediaMetadata({
             title: title || 'Unknown Title',
             artist: artist || 'Unknown Artist',
-            album: album || 'TFI Tapes',
+            album: album || 'TFI Stereo',
             artwork: artwork ? [{ src: artwork, sizes: '512x512', type: 'image/jpeg' }] : []
         });
 

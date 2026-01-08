@@ -10,15 +10,15 @@ const pressStart2P = Press_Start_2P({
 });
 
 export const metadata: Metadata = {
-  title: "TFI Tapes - Telugu Film Industry Mixtapes",
-  description: "Create and play retro-style cassette mixtapes with Telugu Film Industry songs. A nostalgic music experience powered by JioSaavn.",
-  viewport: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0",
-  manifest: "/manifest.json",
+  title: "TFI Stereo - Premium Audio Experience",
+  description: "High-fidelity retro cassette player and iPod simulator.",
+  generator: 'Next.js',
+  manifest: '/manifest.json',
   themeColor: "#000000",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
-    title: "TFI Tapes",
+    statusBarStyle: 'black-translucent',
+    title: "TFI Stereo",
   },
   icons: {
     icon: [

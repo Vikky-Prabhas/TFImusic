@@ -311,11 +311,13 @@ export function Stage() {
     const handleExport = () => {
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(mixes));
         const downloadAnchorNode = document.createElement('a');
-        downloadAnchorNode.setAttribute("href", dataStr);
-        downloadAnchorNode.setAttribute("download", "tfi-tapes-backup.json");
-        document.body.appendChild(downloadAnchorNode);
-        downloadAnchorNode.click();
-        downloadAnchorNode.remove();
+        if (downloadAnchorNode) {
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", "tfi-stereo-backup.json");
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+        }
         addToast("Mixtapes exported successfully!");
     };
 
@@ -552,7 +554,7 @@ export function Stage() {
                 >
                     <img src="/cassette-icon.png" alt="Cassette" className="w-10 h-10 pointer-events-none" />
                     <h1 className="text-4xl font-retro text-retro-white tracking-tighter pointer-events-none">
-                        TFI<span className="text-retro-white">-Tapes</span>
+                        TFI<span className="text-retro-white"> Stereo</span>
                     </h1>
                 </motion.div>
 
@@ -643,40 +645,42 @@ export function Stage() {
                                         className="hover:z-50"
                                         drag={false} // Disable internal drag, let parent wrapper handle it
                                     />
-                                    <div className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-all duration-300 z-[60] translate-y-2 group-hover:translate-y-0 pointer-events-none group-hover:pointer-events-auto">
-                                        <div className="group/menu flex items-center justify-center bg-black/80 backdrop-blur-md border border-white/20 rounded-full h-10 w-10 hover:w-36 transition-all duration-300 shadow-2xl overflow-hidden cursor-pointer relative pointer-events-auto">
-                                            {/* Trigger Icon */}
-                                            <MoreHorizontal size={20} className="text-white absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 transition-opacity duration-200 group-hover/menu:opacity-0" />
+                                    {/* Realistic "Tape Tabs" Actions */}
+                                    <div className="absolute -top-3 right-4 flex gap-2 opacity-0 group-hover:opacity-100 group-hover:-translate-y-2 transition-all duration-300 ease-out z-[40]" onPointerDown={(e) => e.stopPropagation()}>
 
-                                            {/* Action Buttons - Rendered immediately but hidden via opacity/width for smooth animation */}
-                                            <div className="flex gap-1 opacity-0 group-hover/menu:opacity-100 transition-opacity duration-300 delay-75 w-full justify-evenly px-2" onPointerDown={(e) => e.stopPropagation()}>
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); setEditingMix(mix); }}
-                                                    className="p-1 text-white hover:text-cyan-400 hover:bg-white/10 rounded-full transition-colors"
-                                                    title="Edit Mix"
-                                                >
-                                                    <Pencil size={18} />
-                                                </button>
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); handleLibrarySnapshot(mix); }}
-                                                    className="p-1 text-white hover:text-purple-400 hover:bg-white/10 rounded-full transition-colors"
-                                                    title="Share Snapshot"
-                                                >
-                                                    <Camera size={18} />
-                                                </button>
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        loadMix(mix.id);
-                                                        setIsSearchOpen(true);
-                                                    }}
-                                                    className="p-1 text-white hover:text-green-400 hover:bg-white/10 rounded-full transition-colors"
-                                                    title="Add Songs"
-                                                >
-                                                    <Plus size={18} />
-                                                </button>
-                                            </div>
-                                        </div>
+                                        {/* Edit Tab (Yellow Masking Tape) */}
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); setEditingMix(mix); }}
+                                            className="relative group/btn flex items-center justify-center w-8 h-10 bg-[#fef3c7] shadow-md border-b-2 border-[#dce0c0] hover:-translate-y-1 transition-transform duration-200 origin-bottom rotate-[-2deg] rounded-t-sm"
+                                            title="Edit Mix"
+                                        >
+                                            <div className="absolute top-0 w-full h-1 bg-black/5 opacity-20"></div> {/* Tape Texture */}
+                                            <Pencil size={16} className="text-blue-900 opacity-80" strokeWidth={2.5} />
+                                        </button>
+
+                                        {/* Share Tab (White Label) */}
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); handleLibrarySnapshot(mix); }}
+                                            className="relative group/btn flex items-center justify-center w-8 h-10 bg-[#f4f4f5] shadow-md border-b-2 border-[#d4d4d8] hover:-translate-y-1 transition-transform duration-200 origin-bottom rotate-[1deg] rounded-t-sm"
+                                            title="Share Snapshot"
+                                        >
+                                            <div className="absolute top-0 w-full h-1 bg-black/5 opacity-20"></div>
+                                            <Camera size={16} className="text-zinc-800 opacity-80" strokeWidth={2.5} />
+                                        </button>
+
+                                        {/* Add Songs Tab (Green Sticker) */}
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                loadMix(mix.id);
+                                                setIsSearchOpen(true);
+                                            }}
+                                            className="relative group/btn flex items-center justify-center w-8 h-10 bg-[#dcfce7] shadow-md border-b-2 border-[#bbf7d0] hover:-translate-y-1 transition-transform duration-200 origin-bottom rotate-[-1deg] rounded-t-sm"
+                                            title="Add Songs"
+                                        >
+                                            <div className="absolute top-0 w-full h-1 bg-black/5 opacity-20"></div>
+                                            <Plus size={16} className="text-green-900 opacity-80" strokeWidth={3} />
+                                        </button>
                                     </div>
                                 </motion.div>
                             );

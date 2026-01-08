@@ -28,23 +28,29 @@ interface ViewState {
 
 const MAIN_MENU: MenuItem[] = [
     { label: "Music", type: 'navigation', target: 'music' },
-    { label: "Playlists", type: 'navigation', target: 'playlists' },
-    { label: "Cinema Mode", type: 'action', action: () => { } }, // Triggers Cinema
-    { label: "Search", type: 'navigation', target: 'search' }, // Changed to navigation target
-    { label: "Now Playing", type: 'action', action: () => { } }, // Handled dynamically
+    { label: "Cover Flow", type: 'action', action: () => alert("Cover Flow - Rotate Device to View") },
+    { label: "Games", type: 'navigation', target: 'games' },
+    { label: "Cinema Mode", type: 'action', action: () => { } },
+    { label: "Now Playing", type: 'action', action: () => { } },
     { label: "Settings", type: 'navigation', target: 'settings' }
 ];
 
 const MUSIC_MENU: MenuItem[] = [
+    { label: "Playlists", type: 'navigation', target: 'playlists' },
     { label: "Search", type: 'navigation', target: 'search' },
-    { label: "Cover Flow", type: 'action', action: () => console.log("Cover Flow") },
-    { label: "artists", type: 'navigation', target: 'artists' },
-    { label: "albums", type: 'navigation', target: 'albums' },
-    { label: "songs", type: 'navigation', target: 'songs' },
+    { label: "Artists", type: 'navigation', target: 'artists' },
+    { label: "Albums", type: 'navigation', target: 'albums' },
+    { label: "Songs", type: 'navigation', target: 'songs' },
+];
+
+const GAMES_MENU: MenuItem[] = [
+    { label: "Brick", type: 'action', action: () => alert("Starting Brick...") },
+    { label: "Parachute", type: 'action', action: () => alert("Starting Parachute...") },
+    { label: "Music Quiz", type: 'action', action: () => alert("Starting Music Quiz...") },
 ];
 
 const SETTINGS_MENU: MenuItem[] = [
-    { label: "About", type: 'action', action: () => alert("TFI Studio iPod v1.0") },
+    { label: "About", type: 'action', action: () => alert("TFI Stereo iPod v2.0") },
     { label: "Reset", type: 'action', action: () => window.location.reload() },
 ];
 
@@ -64,7 +70,7 @@ export function IPod() {
 
     // Initial State
     const [viewStack, setViewStack] = useState<ViewState[]>([
-        { id: 'main', title: "iPod", viewType: 'menu', selectedIndex: 0, staticItems: MAIN_MENU }
+        { id: 'main', title: "TFI Stereo", viewType: 'menu', selectedIndex: 0, staticItems: MAIN_MENU }
     ]);
 
     // Derived state for current view
@@ -78,6 +84,7 @@ export function IPod() {
 
         switch (currentView.id) {
             case 'music': return MUSIC_MENU;
+            case 'games': return GAMES_MENU;
             case 'settings': return SETTINGS_MENU;
 
             case 'playlists':
@@ -101,7 +108,58 @@ export function IPod() {
             case 'search':
                 return currentView.staticItems || [];
 
+            case 'artists': {
+                const artists = new Set<string>();
+                mixes.forEach(m => m.songs.forEach(s => {
+                    // Split multiple artists and clean up
+                    s.primaryArtists.split(',').forEach(a => artists.add(a.trim()));
+                }));
+                const sortedArtists = Array.from(artists).sort();
 
+                if (sortedArtists.length === 0) return [{ label: "(No Artists Found)", type: 'action', action: () => handleBack() }];
+
+                return sortedArtists.map(artist => ({
+                    label: decodeHtml(artist),
+                    type: 'navigation',
+                    target: `artist-${artist}`,
+                    data: artist
+                }));
+            }
+
+            case 'albums': {
+                const albums = new Map<string, { id: string, name: string }>();
+                mixes.forEach(m => m.songs.forEach(s => {
+                    if (s.album?.id) {
+                        albums.set(s.album.id, { id: s.album.id, name: s.album.name });
+                    }
+                }));
+                const sortedAlbums = Array.from(albums.values()).sort((a, b) => a.name.localeCompare(b.name));
+
+                if (sortedAlbums.length === 0) return [{ label: "(No Albums Found)", type: 'action', action: () => handleBack() }];
+
+                return sortedAlbums.map(album => ({
+                    label: decodeHtml(album.name),
+                    type: 'navigation',
+                    target: `album-${album.id}`,
+                    data: album
+                }));
+            }
+
+            case 'songs': {
+                const allSongs = mixes.flatMap(m => m.songs);
+                // Unique by ID
+                const uniqueSongs = Array.from(new Map(allSongs.map(s => [s.id, s])).values())
+                    .sort((a, b) => a.name.localeCompare(b.name));
+
+                if (uniqueSongs.length === 0) return [{ label: "(No Songs Found)", type: 'action', action: () => handleBack() }];
+
+                return uniqueSongs.map(s => ({
+                    label: decodeHtml(s.name),
+                    type: 'action',
+                    data: s,
+                    action: () => playSongNow(s)
+                }));
+            }
 
             case 'rename':
                 // Rename View: Just shows instruction or current name?
@@ -138,6 +196,36 @@ export function IPod() {
                         action: () => handleDeletePlaylist(mix.id)
                     });
                     return songItems;
+                }
+
+                // Artist Drill-down
+                if (currentView.id.startsWith('artist-')) {
+                    const artistName = currentView.id.replace('artist-', '');
+                    const songs = mixes.flatMap(m => m.songs).filter(s =>
+                        s.primaryArtists.toLowerCase().includes(artistName.toLowerCase())
+                    );
+                    const uniqueSongs = Array.from(new Map(songs.map(s => [s.id, s])).values());
+
+                    return uniqueSongs.map(s => ({
+                        label: decodeHtml(s.name),
+                        type: 'action',
+                        data: s,
+                        action: () => playSongNow(s)
+                    }));
+                }
+
+                // Album Drill-down
+                if (currentView.id.startsWith('album-')) {
+                    const albumId = currentView.id.replace('album-', '');
+                    const songs = mixes.flatMap(m => m.songs).filter(s => s.album?.id === albumId);
+                    const uniqueSongs = Array.from(new Map(songs.map(s => [s.id, s])).values());
+
+                    return uniqueSongs.map(s => ({
+                        label: decodeHtml(s.name),
+                        type: 'action',
+                        data: s,
+                        action: () => playSongNow(s)
+                    }));
                 }
 
                 // Song Options

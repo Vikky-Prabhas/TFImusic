@@ -253,7 +253,7 @@ export function IpodScreen({
                             <div className="flex-1 flex flex-col justify-center text-left overflow-hidden min-w-0">
                                 <h2 className="text-white font-bold text-xs truncate leading-snug mb-0.5 drop-shadow-md">{decodeHtml(currentSong?.name || "No Music")}</h2>
                                 <p className="text-zinc-300 text-[10px] truncate mb-0.5">{decodeHtml(currentSong?.primaryArtists || "Unknown Artist")}</p>
-                                <p className="text-zinc-500 text-[9px] truncate mb-2">{decodeHtml(currentSong?.album?.name || "TFI Studio")}</p>
+                                <p className="text-zinc-500 text-[9px] truncate mb-2">{decodeHtml(currentSong?.album?.name || "TFI Stereo")}</p>
 
                                 {/* Progress Bar */}
                                 <div className="w-full mt-1">
