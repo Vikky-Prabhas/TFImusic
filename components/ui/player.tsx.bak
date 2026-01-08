@@ -1,0 +1,215 @@
+"use client";
+
+import { motion } from "framer-motion";
+import { clsx } from "clsx";
+import { Play, Pause, Rewind, FastForward } from "lucide-react";
+import { Visualizer } from "./visualizer";
+
+import { JioSaavnSong } from "@/lib/jiosaavn";
+
+interface PlayerProps {
+    isPlaying: boolean;
+    hasCassette: boolean;
+    cassetteTitle?: string;
+    cassetteColor?: string;
+    currentSong?: JioSaavnSong;
+    onPlayToggle: () => void;
+    onNext?: () => void;
+    onPrev?: () => void;
+    volume: number;
+    onVolumeChange: (vol: number) => void;
+    progress?: number;
+    onSeek?: (val: number) => void;
+    className?: string;
+}
+
+export function Player({
+    isPlaying,
+    hasCassette,
+    cassetteTitle,
+    cassetteColor = "orange",
+    currentSong,
+    onPlayToggle,
+    onNext,
+    onPrev,
+    volume,
+    onVolumeChange,
+    progress = 0,
+    onSeek,
+    className,
+}: PlayerProps) {
+    // Color mapping for cassette display
+    const cassetteColors: Record<string, string> = {
+        orange: "#ff6600",
+        purple: "#9933ff",
+        white: "#e0e0e0",
+        green: "#00cc66",
+        red: "#ff0055"
+    };
+
+    const displayColor = cassetteColors[cassetteColor] || "#ff6600";
+
+    const handleProgressBarClick = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (!onSeek) return;
+        const rect = e.currentTarget.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const percentage = Math.min(Math.max(x / rect.width, 0), 1);
+        onSeek(percentage);
+    };
+
+    return (
+        <motion.div
+            className={clsx("relative w-96 h-[480px] cursor-grab active:cursor-grabbing", className)}
+            drag
+            dragMomentum={false}
+            dragElastic={0.1}
+        >
+            <svg viewBox="0 0 320 400" className="w-full h-full drop-shadow-2xl pointer-events-none">
+                {/* Main Body */}
+                <rect x="10" y="10" width="300" height="380" rx="20" fill="#e0e0e0" stroke="#111" strokeWidth="4" />
+
+                {/* Screen Area */}
+                <rect x="30" y="40" width="260" height="140" rx="10" fill="#222" stroke="#111" strokeWidth="3" />
+
+                {/* Cassette Window */}
+                <rect x="50" y="60" width="220" height="100" rx="5" fill="#111" stroke="#333" strokeWidth="2" />
+
+                {/* Window Glass Reflection */}
+                <path d="M 50 160 L 270 60" stroke="#fff" strokeWidth="1" opacity="0.1" />
+
+                {/* Cassette Inside (Visual only) */}
+                {hasCassette && (
+                    <g>
+                        {/* Cassette body visible in window */}
+                        <rect x="60" y="70" width="200" height="80" rx="4" fill={displayColor} stroke="#111" strokeWidth="2" />
+
+                        {/* Cassette label */}
+                        <rect x="70" y="80" width="180" height="40" rx="2" fill="#f5f5dc" opacity="0.9" />
+
+                        {/* Reels */}
+                        <circle cx="100" cy="125" r="15" fill="#fff" opacity={isPlaying ? 0.5 : 1} />
+                        <circle cx="220" cy="125" r="15" fill="#fff" opacity={isPlaying ? 0.5 : 1} />
+
+                        {/* Spinning Animation when playing */}
+                        {isPlaying && (
+                            <>
+                                <animateTransform
+                                    xlinkHref="#leftReel"
+                                    attributeName="transform"
+                                    type="rotate"
+                                    from="0 100 125"
+                                    to="360 100 125"
+                                    dur="2s"
+                                    repeatCount="indefinite"
+                                />
+                                <animateTransform
+                                    xlinkHref="#rightReel"
+                                    attributeName="transform"
+                                    type="rotate"
+                                    from="0 220 125"
+                                    to="360 220 125"
+                                    dur="2s"
+                                    repeatCount="indefinite"
+                                />
+                            </>
+                        )}
+
+                        <g id="leftReel">
+                            <path d="M 100 110 L 100 140 M 85 125 L 115 125" stroke="#111" strokeWidth="2" />
+                        </g>
+                        <g id="rightReel">
+                            <path d="M 220 110 L 220 140 M 205 125 L 235 125" stroke="#111" strokeWidth="2" />
+                        </g>
+
+                        {/* Title in Window */}
+                        <text x="160" y="105" textAnchor="middle" fill="#222" fontSize="10" fontFamily="monospace" fontWeight="bold">
+                            {currentSong ? currentSong.name.substring(0, 20) : (cassetteTitle ? cassetteTitle.substring(0, 14) : "")}
+                        </text>
+                        {currentSong && (
+                            <text x="160" y="115" textAnchor="middle" fill="#444" fontSize="8" fontFamily="monospace">
+                                {currentSong.primaryArtists.substring(0, 25)}
+                            </text>
+                        )}
+                    </g>
+                )}
+
+                {/* Branding */}
+                <text x="160" y="200" textAnchor="middle" fontFamily="sans-serif" fontWeight="bold" fontSize="14" fill="#111">
+                    STEREO CASSETTE PLAYER
+                </text>
+                <text x="160" y="215" textAnchor="middle" fontFamily="sans-serif" fontSize="10" fill="#666">
+                    AUTO REVERSE
+                </text>
+
+                {/* Controls Area */}
+                <rect x="30" y="240" width="260" height="120" rx="10" fill="#ccc" stroke="#111" strokeWidth="2" />
+
+                {/* Battery Indicator */}
+                <circle cx="270" cy="260" r="4" fill={isPlaying ? "#ff0000" : "#333"} />
+                <text x="270" y="275" textAnchor="middle" fontSize="8" fontFamily="sans-serif" fill="#111">BATT</text>
+
+                {/* Playing LED Indicator */}
+                <circle cx="50" cy="260" r="5" fill={isPlaying ? "#00ff00" : "#003300"} opacity={isPlaying ? 1 : 0.3}>
+                    {isPlaying && (
+                        <animate attributeName="opacity" values="1;0.3;1" dur="1s" repeatCount="indefinite" />
+                    )}
+                </circle>
+                <text x="50" y="275" textAnchor="middle" fontSize="8" fontFamily="sans-serif" fill="#111">REC</text>
+            </svg>
+
+
+
+            {/* Interactive Controls Layer */}
+            <div className="absolute inset-0 pointer-events-auto flex flex-col items-center pt-[200px]">
+                {/* LCD Display */}
+                <div className="w-[260px] h-[40px] bg-[#9ea792] mb-6 rounded-sm border-4 border-[#555] flex items-center justify-between px-2 font-mono text-xs shadow-inner overflow-hidden relative">
+                    <div className="absolute inset-0 bg-black opacity-5 pointer-events-none" />
+
+                    {/* Song Info Marquee */}
+                    <div className="flex-1 overflow-hidden relative h-full flex items-center">
+                        <div className="whitespace-nowrap animate-marquee text-black font-bold uppercase tracking-widest">
+                            {currentSong ? `${currentSong.name} - ${currentSong.primaryArtists}` : "NO CASSETTE INSERTED"}
+                        </div>
+                    </div>
+
+                    {/* Visualizer */}
+                    <Visualizer isPlaying={isPlaying} className="w-16 h-full ml-2 opacity-80 mix-blend-multiply" />
+                </div>
+
+                >
+                <FastForward className="w-6 h-6 text-white" />
+            </button>
+        </div>
+
+            {/* Retro Volume Slider (Integrated) */ }
+    <div className="absolute bottom-6 right-8 w-28 flex flex-col items-center gap-1" onPointerDown={(e) => e.stopPropagation()}>
+        <div className="w-full flex justify-between px-1">
+            <span className="text-[6px] font-sans font-bold text-gray-600">MIN</span>
+            <span className="text-[6px] font-sans font-bold text-gray-600">VOL</span>
+            <span className="text-[6px] font-sans font-bold text-gray-600">MAX</span>
+        </div>
+        <div className="relative w-full h-3 bg-gray-800 rounded-full shadow-inner border border-gray-600 flex items-center px-1">
+            {/* Track Lines */}
+            <div className="absolute inset-x-2 top-1/2 h-[1px] bg-gray-600"></div>
+
+            <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.05"
+                value={volume}
+                onChange={(e) => onVolumeChange(parseFloat(e.target.value))}
+                className="w-full h-full opacity-0 cursor-pointer z-10 absolute inset-0"
+            />
+            {/* Custom Thumb Visual */}
+            <div
+                className="absolute h-2 w-4 bg-gray-400 rounded shadow-sm border border-gray-500 pointer-events-none transition-all"
+                style={{ left: `calc(${volume * 100}% - ${volume * 16}px)` }}
+            >
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-0.5 h-1.5 bg-gray-600 rounded-full"></div>
+            </div>
+        </div>
+    </div>
+        </motion.div >
+    );
+}

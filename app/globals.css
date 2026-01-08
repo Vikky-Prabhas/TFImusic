@@ -1,0 +1,20 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-retro-black: #111111;
+  --color-retro-gray: #2a2a2a;
+  --color-retro-white: #f0f0f0;
+  --color-retro-orange: #ff6600;
+  --color-retro-purple: #9933ff;
+  --color-retro-green: #00cc66;
+  --color-retro-red: #ff0055;
+  --color-retro-yellow: #ffcc00;
+  --font-sans: var(--font-inter);
+  --font-retro: var(--font-press-start);
+}
+
+body {
+  background-color: var(--color-retro-black);
+  color: var(--color-retro-white);
+  font-family: var(--font-sans);
+}
