@@ -1,11 +1,13 @@
 import { motion } from "framer-motion";
-import { ChevronRight, Battery, Play, Pause } from "lucide-react";
+import { ChevronRight, Battery, Wifi, Play, Pause, SkipForward, SkipBack, Volume2, Search, ArrowRight } from "lucide-react";
+import { useEffect } from "react";
 import { JioSaavnSong } from "@/lib/jiosaavn";
 import { decodeHtml } from "@/lib/utils";
 import { CinemaModeMobile as CinemaMode } from "@/components/scene/cinema-mode-mobile";
+import { CoverFlowMobile as CoverFlow } from "@/components/scene/cover-flow-mobile";
 
 interface IpodScreenProps {
-    variant?: 'menu' | 'player' | 'search' | 'loading' | 'message' | 'cinema';
+    variant?: 'menu' | 'player' | 'search' | 'loading' | 'message' | 'cinema' | 'cover-flow';
     title: string;
     menuItems: string[]; // List of labels to display
     itemsData?: any[]; // Optional rich data for items (images etc)
@@ -17,9 +19,14 @@ interface IpodScreenProps {
     isLoading?: boolean;
     message?: string;
     searchQuery?: string;
+    onSearchChange?: (query: string) => void;
+    onSearchSubmit?: (query: string) => void;
+    inputRef?: React.RefObject<HTMLInputElement>;
     onItemSelect?: (index: number) => void;
     onPlayPause?: () => void;
     onBack?: () => void;
+    isFlipped?: boolean;
+    trackIndex?: number;
 }
 
 export function IpodScreen({
@@ -37,7 +44,12 @@ export function IpodScreen({
     searchQuery = "",
     onItemSelect,
     onPlayPause,
-    onBack
+    onBack,
+    onSearchChange,
+    onSearchSubmit,
+    inputRef,
+    isFlipped,
+    trackIndex
 }: IpodScreenProps) {
 
     // Format helper
@@ -57,6 +69,14 @@ export function IpodScreen({
         }
         return null;
     };
+
+    // Auto-scroll logic for Search
+    useEffect(() => {
+        if (variant === 'search' && selectedIndex >= 0) {
+            const el = document.getElementById(`search-item-${selectedIndex}`);
+            el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        }
+    }, [selectedIndex, variant]);
 
     return (
         <div className="w-full h-full bg-black flex flex-col font-sans text-xs overflow-hidden text-white">
@@ -86,14 +106,28 @@ export function IpodScreen({
 
             {/* Content Area */}
             <div className="flex-1 overflow-hidden relative bg-black">
-                {isLoading ? (
-                    <div className="w-full h-full flex flex-col items-center justify-center gap-2">
-                        <div className="animate-spin rounded-full h-6 w-6 border-2 border-zinc-800 border-t-blue-500"></div>
-                        <span className="text-[10px] text-zinc-500 font-medium animate-pulse">Loading...</span>
-                    </div>
-                ) : variant === 'message' ? (
+                {variant === 'message' ? (
                     <div className="w-full h-full flex items-center justify-center p-6 text-center">
                         <p className="text-sm font-medium text-zinc-400 leading-relaxed">{message}</p>
+                    </div>
+                ) : variant === 'cinema' ? (
+                    <div className="w-full h-full bg-black">
+                        <CinemaMode
+                            isOpen={true}
+                            onClose={onBack || (() => { })}
+                            currentSong={currentSong || null}
+                        />
+                    </div>
+                ) : variant === 'cover-flow' ? (
+                    <div className="w-full h-full bg-black">
+                        <CoverFlow
+                            isOpen={true}
+                            onClose={onBack || (() => { })}
+                            selectedIndex={selectedIndex}
+                            items={itemsData}
+                            isFlipped={isFlipped}
+                            trackIndex={trackIndex}
+                        />
                     </div>
                 ) : variant === 'search' ? (
                     <div className="flex flex-col h-full bg-black">
@@ -101,14 +135,35 @@ export function IpodScreen({
                         <div className="h-9 bg-zinc-900 border-b border-zinc-800 flex items-center px-2 shrink-0 shadow-inner">
                             <div className="w-full h-6 bg-zinc-800 border border-zinc-700 rounded-lg flex items-center px-2 shadow-[inset_0_1px_2px_rgba(0,0,0,0.5)]">
                                 <span className="text-zinc-500 mr-2 opacity-70">🔍</span>
-                                <span className={`text-white bg-transparent w-full focus:outline-none text-[11px] font-medium truncate ${searchQuery ? '' : 'text-zinc-600'}`}>
-                                    {searchQuery || "Search Music..."}
-                                </span>
+                                <input
+                                    ref={inputRef}
+                                    type="text"
+                                    value={searchQuery || ""}
+                                    onChange={(e) => onSearchChange?.(e.target.value)}
+                                    placeholder="Search Music..."
+                                    className="bg-transparent w-full text-white text-[11px] font-medium focus:outline-none placeholder:text-zinc-600 caret-blue-500"
+                                    autoFocus
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            onSearchSubmit?.(searchQuery);
+                                        }
+                                    }}
+                                />
+                                {/* Explicit Submit Button */}
+                                <button
+                                    onClick={() => onSearchSubmit?.(searchQuery)}
+                                    className="ml-2 w-5 h-5 flex items-center justify-center rounded-full bg-blue-600 text-white hover:bg-blue-500 active:scale-95 transition-all"
+                                >
+                                    <ArrowRight size={10} />
+                                </button>
                             </div>
                         </div>
-                        {/* Results List */}
-                        <div className="flex-1 overflow-y-auto pb-1">
-                            {menuItems.length === 0 ? (
+                        <div className="flex-1 overflow-y-auto pb-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]" id="search-results-container">
+                            {isLoading ? (
+                                <div className="p-8 flex flex-col items-center justify-center opacity-50">
+                                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-zinc-500 border-t-transparent"></div>
+                                </div>
+                            ) : menuItems.length === 0 ? (
                                 <div className="p-8 text-center text-zinc-600 text-[10px] uppercase tracking-wider font-semibold">No Results Found</div>
                             ) : (
                                 menuItems.map((item, index) => {
@@ -118,6 +173,7 @@ export function IpodScreen({
                                     return (
                                         <div
                                             key={`${item || 'item'}-${index}`}
+                                            id={`search-item-${index}`}
                                             onClick={() => onItemSelect?.(index)}
                                             className={`h-14 flex items-center justify-between px-3 font-medium border-b border-zinc-900 transition-colors cursor-pointer active:brightness-110 ${isSelected
                                                 ? "bg-gradient-to-b from-blue-600 to-blue-700 text-white shadow-inner"
@@ -154,28 +210,61 @@ export function IpodScreen({
                             )}
                         </div>
                     </div>
+                ) : isLoading ? (
+                    // Default Loading State for non-search views
+                    <div className="w-full h-full flex flex-col items-center justify-center gap-2">
+                        <div className="animate-spin rounded-full h-6 w-6 border-2 border-zinc-800 border-t-blue-500"></div>
+                        <span className="text-[10px] text-zinc-500 font-medium animate-pulse">Loading...</span>
+                    </div>
                 ) : variant === 'menu' ? (
                     // --- MENU VIEW (Split) ---
                     <div className="flex h-full bg-black">
-                        {/* Left: Menu List */}
-                        <div className="w-1/2 flex flex-col bg-black border-r border-zinc-800">
-                            {/* Header Row if needed, skipping for cleaner look */}
-                            {menuItems.map((item, index) => {
-                                const isSelected = index === selectedIndex;
-                                return (
+                        {/* Left: Menu List (Virtual Window) */}
+                        <div className="w-1/2 flex flex-col bg-black border-r border-zinc-800 relative overflow-hidden">
+                            {(() => {
+                                const VISIBLE_COUNT = 6;
+                                const half = Math.floor(VISIBLE_COUNT / 2);
+                                let start = selectedIndex - half;
+                                if (start < 0) start = 0;
+                                let end = start + VISIBLE_COUNT;
+                                if (end > menuItems.length) {
+                                    end = menuItems.length;
+                                    start = Math.max(0, end - VISIBLE_COUNT);
+                                }
+
+                                const visibleItems = menuItems.slice(start, end);
+
+                                return visibleItems.map((item, i) => {
+                                    const realIndex = start + i;
+                                    const isSelected = realIndex === selectedIndex;
+                                    return (
+                                        <div
+                                            key={realIndex} // Use realIndex for stability
+                                            onClick={() => onItemSelect?.(realIndex)}
+                                            className={`h-7 flex items-center justify-between px-2 font-medium text-[11px] cursor-pointer active:brightness-110 ${isSelected
+                                                ? "bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-md sticky top-0 z-10"
+                                                : "bg-black text-zinc-300 border-b border-zinc-900"
+                                                }`}
+                                        >
+                                            <span className="truncate">{item}</span>
+                                            <ChevronRight size={10} className={isSelected ? "text-white" : "text-zinc-800"} />
+                                        </div>
+                                    );
+                                });
+                            })()}
+                            {/* Scroll Indicator (if needed) */}
+                            {menuItems.length > 6 && (
+                                <div className="absolute right-0 top-0 bottom-0 w-1 bg-zinc-900">
                                     <div
-                                        key={item + index}
-                                        onClick={() => onItemSelect?.(index)}
-                                        className={`h-7 flex items-center justify-between px-2 font-medium text-[11px] cursor-pointer active:brightness-110 ${isSelected
-                                            ? "bg-gradient-to-r from-blue-600 to-blue-500 text-white"
-                                            : "bg-black text-zinc-300 border-b border-zinc-900"
-                                            }`}
-                                    >
-                                        <span className="truncate">{item}</span>
-                                        <ChevronRight size={10} className={isSelected ? "text-white" : "text-zinc-800"} />
-                                    </div>
-                                );
-                            })}
+                                        className="w-full bg-zinc-600 rounded-full transition-all duration-75"
+                                        style={{
+                                            height: `${Math.max(10, (6 / menuItems.length) * 100)}%`,
+                                            top: `${(selectedIndex / menuItems.length) * 100}%`,
+                                            position: 'absolute'
+                                        }}
+                                    />
+                                </div>
+                            )}
                         </div>
                         {/* Right: Preview / Album Art Placeholder */}
                         <div className="w-1/2 bg-gradient-to-br from-zinc-900 to-black flex items-center justify-center p-3 relative z-10 overflow-hidden">
