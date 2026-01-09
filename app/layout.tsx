@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Press_Start_2P } from "next/font/google";
 import "./globals.css";
 
@@ -25,10 +25,14 @@ export const metadata: Metadata = {
       { url: "/app-icon-192.png", sizes: "192x192", type: "image/png" },
       { url: "/app-icon-512.png", sizes: "512x512", type: "image/png" },
     ],
-    apple: [
-      { url: "/app-icon-192.png", sizes: "192x192", type: "image/png" },
-    ],
   },
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 import { PwaRegister } from "@/components/pwa-register";

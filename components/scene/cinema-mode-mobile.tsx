@@ -3,9 +3,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Music2, Play, Pause, SkipBack, SkipForward, LogOut } from "lucide-react";
-// ...
-
-
 import { JioSaavnSong, getLyricsWithFallback } from "@/lib/jiosaavn";
 
 interface CinemaModeMobileProps {
@@ -50,7 +47,6 @@ export function CinemaModeMobile({
             .replace(/&gt;/g, '>');
     };
 
-
     return (
         <motion.div
             initial={{ opacity: 0 }}
@@ -76,41 +72,69 @@ export function CinemaModeMobile({
                         <motion.img
                             key={currentImageIndex}
                             src={HERO_IMAGES[currentImageIndex]}
-                            alt="Hero Background"
-                            className="absolute inset-0 w-full h-full object-cover"
+                            alt="Hero"
+                            className="absolute inset-0 w-full h-full object-cover opacity-50"
                             initial={{ opacity: 0, scale: 1.1 }}
-                            animate={{ opacity: 0.4, scale: 1 }}
+                            animate={{ opacity: 0.5, scale: 1 }}
                             exit={{ opacity: 0 }}
-                            transition={{ duration: 2, ease: "easeInOut" }}
+                            transition={{ duration: 1.5 }}
                         />
                     )}
                 </AnimatePresence>
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
+
+                {/* Gradient Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
             </div>
 
-            {/* Content */}
-            <div className="relative z-10 flex-1 flex flex-col p-12">
-                {/* Main Content */}
-                <div className="flex-1 flex flex-col justify-end pb-12">
-                    {currentSong && (
-                        <motion.div
-                            initial={{ y: 20, opacity: 0 }}
-                            animate={{ y: 0, opacity: 1 }}
-                            key={currentSong.id}
-                            className="max-w-4xl"
-                        >
-                            <h1 className="text-2xl md:text-3xl font-bold text-white mb-2 leading-tight drop-shadow-lg">
-                                {decodeHtmlEntities(currentSong.name)}
-                            </h1>
-                            <p className="text-base md:text-lg text-gray-300 font-light">
-                                {decodeHtmlEntities(currentSong.primaryArtists)}
-                            </p>
-                        </motion.div>
+            {/* Content Container */}
+            <div className="relative z-10 flex flex-col h-full p-6 pb-12">
+                {/* Header Actions */}
+                <div className="flex justify-between items-center mb-8">
+                    <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/5">
+                        <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
+                        <span className="text-[10px] uppercase font-bold tracking-widest text-white/90">Cinema</span>
+                    </div>
+
+                    <button
+                        onClick={onClose}
+                        className="w-8 h-8 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/5 active:scale-90 transition-transform"
+                    >
+                        <X size={14} className="text-white" />
+                    </button>
+                </div>
+
+                {/* Main Content Area - Lyrics or Visuals */}
+                <div className="flex-1 flex flex-col items-center justify-center text-center">
+                    {currentSong ? (
+                        <div className="space-y-6 max-w-xs">
+                            <motion.div
+                                initial={{ y: 20, opacity: 0 }}
+                                animate={{ y: 0, opacity: 1 }}
+                                className="w-48 h-48 mx-auto relative rounded-xl overflow-hidden shadow-2xl border border-white/10"
+                            >
+                                <img
+                                    src={Array.isArray(currentSong.image) ? currentSong.image[2]?.link : currentSong.image}
+                                    className="w-full h-full object-cover"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent pointer-events-none" />
+                            </motion.div>
+
+                            <div>
+                                <h2 className="text-2xl font-bold text-white mb-2 leading-tight drop-shadow-md">
+                                    {decodeHtmlEntities(currentSong.name)}
+                                </h2>
+                                <p className="text-zinc-300 text-sm font-medium">
+                                    {decodeHtmlEntities(currentSong.primaryArtists)}
+                                </p>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="text-center opacity-70">
+                            <Music2 size={48} className="mx-auto mb-4 text-white/50" />
+                            <p className="text-white text-lg font-light">Listening on</p>
+                            <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-zinc-400">TFI Stereo</h1>
+                        </div>
                     )}
-
-
-
-                    {/* NO CONTROLS OR CLOSE BUTTON FOR MOBILE - Uses Physical Button */}
                 </div>
             </div>
         </motion.div>
