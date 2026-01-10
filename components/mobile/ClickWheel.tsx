@@ -5,6 +5,7 @@ import { Play, Pause, FastForward, Rewind } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
 
 interface ClickWheelProps {
+    enableSounds?: boolean;
     onScroll: (direction: 1 | -1) => void;
     onSelect: () => void;
     onMenu: () => void;
@@ -13,7 +14,7 @@ interface ClickWheelProps {
     onPrev: () => void;
 }
 
-export function ClickWheel({ onScroll, onSelect, onMenu, onPlayPause, onNext, onPrev }: ClickWheelProps) {
+export function ClickWheel({ enableSounds = true, onScroll, onSelect, onMenu, onPlayPause, onNext, onPrev }: ClickWheelProps) {
     const wheelRef = useRef<HTMLDivElement>(null);
     const [isDragging, setIsDragging] = useState(false);
     const lastAngle = useRef<number | null>(null);

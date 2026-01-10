@@ -5,6 +5,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { usePlayback, Mix } from "@/components/providers/playback-context";
 import { JioSaavnSong, searchSongs } from "@/lib/jiosaavn";
 import { decodeHtml } from "@/lib/utils";
+import { loadSettings, saveSettings, resetSettings, clearCache } from "@/lib/settings";
 
 interface MenuItem {
     label: string;
@@ -68,11 +69,6 @@ const COVER_FLOW_ITEMS: MenuItem[] = COVER_FLOW_LIBRARY.map(album => ({
     }
 }));
 
-const SETTINGS_MENU: MenuItem[] = [
-    { label: "About", type: 'action', action: () => alert("TFI Stereo iPod v2.0") },
-    { label: "Reset", type: 'action', action: () => window.location.reload() },
-];
-
 export function IPod() {
     const {
         play, pause, togglePlay, next, prev,
@@ -84,9 +80,16 @@ export function IPod() {
 
     const [isLoading, setIsLoading] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
-    const [gameScroll, setGameScroll] = useState(0); // For passing scroll to games
-    // const [isCinemaMode, setIsCinemaMode] = useState(false); // Refactored to ViewStack
+    const [gameScroll, setGameScroll] = useState(0);
+    const [clickSounds, setClickSounds] = useState(true);
     const inputRef = useRef<HTMLInputElement>(null);
+
+    // Load settings on mount
+    useEffect(() => {
+        const settings = loadSettings();
+        setVolume(settings.volume);
+        setClickSounds(settings.clickSounds);
+    }, [setVolume]);
 
     // Initial State
     const [viewStack, setViewStack] = useState<ViewState[]>([
@@ -109,7 +112,68 @@ export function IPod() {
             case 'games':
                 // Inject logic for Brick Game navigation
                 return []; // GAMES_MENU removed
-            case 'settings': return SETTINGS_MENU;
+
+            case 'settings':
+                // Dynamic Settings Menu
+                return [
+                    {
+                        label: `Volume: ${Math.round(volume * 100)}%`,
+                        type: 'navigation',
+                        target: 'volume-settings'
+                    },
+                    {
+                        label: `Click Sounds: ${clickSounds ? 'On' : 'Off'}`,
+                        type: 'action',
+                        action: () => {
+                            const newValue = !clickSounds;
+                            setClickSounds(newValue);
+                            saveSettings({ clickSounds: newValue });
+                        }
+                    },
+                    {
+                        label: "About",
+                        type: 'action',
+                        action: () => {
+                            setViewStack(prev => [...prev, {
+                                id: 'about',
+                                title: 'About',
+                                viewType: 'message',
+                                selectedIndex: 0,
+                                data: {
+                                    message: 'TFI Stereo\nVersion 2.0.0\n\nMade with love by TFIverse\n\nTwitter: @TFI_verse\nGitHub: Vikky-Prabhas/TFImusic\n\nA premium iPod experience\nbuilt with Next.js'
+                                }
+                            }]);
+                        }
+                    },
+                    {
+                        label: "Clear Cache",
+                        type: 'action',
+                        action: () => {
+                            if (confirm('Clear all cached data? Settings will be preserved.')) {
+                                clearCache();
+                                alert('Cache cleared successfully!');
+                            }
+                        }
+                    },
+                    {
+                        label: "Reset All Settings",
+                        type: 'action',
+                        action: () => {
+                            if (confirm('Reset all settings to defaults? This cannot be undone.')) {
+                                resetSettings();
+                                window.location.reload();
+                            }
+                        }
+                    }
+                ];
+
+            case 'volume-settings':
+                // Volume adjustment screen
+                return [{
+                    label: `Volume: ${Math.round(volume * 100)}%`,
+                    type: 'action',
+                    action: () => { } // Use scroll wheel to adjust
+                }];
 
             case 'playlists':
                 // Dynamic Playlists List
@@ -418,10 +482,30 @@ export function IPod() {
     };
 
     const handleScroll = (direction: number) => {
-        if (currentView.viewType === 'player' || currentView.viewType === 'cinema') {
-            // Volume Control in Player & Cinema
+        // Volume Settings Screen
+        if (currentView.id === 'volume-settings') {
             const newVol = Math.max(0, Math.min(1, volume + (direction * 0.05)));
             setVolume(newVol);
+            saveSettings({ volume: newVol });
+            return;
+        }
+
+        if (currentView.viewType === 'player' || currentView.viewType === 'cinema') {
+            // Volume Control (when volume screen / player is active)
+            if (currentView.viewType === 'player') {
+                const delta = direction; // Assuming 'direction' is the delta for volume
+                const newVol = Math.max(0, Math.min(1, volume + delta * 0.05));
+                setVolume(newVol);
+                saveSettings({ volume: newVol }); // Persist volume
+                if (currentView.id === 'volume') {
+                    // If we are on the dedicated volume screen, we might want to update its display or prevent other actions.
+                    // For now, just let the setVolume trigger re-render.
+                }
+            } else { // currentView.viewType === 'cinema'
+                // Original cinema volume control
+                const newVol = Math.max(0, Math.min(1, volume + (direction * 0.05)));
+                setVolume(newVol);
+            }
         } else if (currentView.viewType === 'cover-flow') {
             // Cover Flow has two scroll modes:
             // 1. Not flipped: scroll through albums
@@ -761,6 +845,7 @@ export function IPod() {
                 {/* Click Wheel Area (Bottom) */}
                 <div className="flex-1 w-full flex items-start justify-center relative z-10">
                     <ClickWheel
+                        enableSounds={clickSounds}
                         onScroll={(direction) => {
                             if (currentView.viewType === 'game') {
                                 // Performance: Dispatch Custom Event to bypass React Render Cycle for Games
