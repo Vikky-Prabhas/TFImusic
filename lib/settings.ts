@@ -1,7 +1,7 @@
 export interface AppSettings {
     volume: number;
     clickSounds: boolean;
-    theme: 'classic' | 'dark';
+    theme: 'classic' | 'black' | 'silver' | 'dark';
     lastPlayedSongId: string | null;
     version: string;
 }
@@ -9,7 +9,7 @@ export interface AppSettings {
 const DEFAULT_SETTINGS: AppSettings = {
     volume: 0.7,
     clickSounds: true,
-    theme: 'classic',
+    theme: 'classic', // White/Classic iPod
     lastPlayedSongId: null,
     version: '2.0.0'
 };

@@ -82,6 +82,7 @@ export function IPod() {
     const [searchQuery, setSearchQuery] = useState("");
     const [gameScroll, setGameScroll] = useState(0);
     const [clickSounds, setClickSounds] = useState(true);
+    const [ipodTheme, setIpodTheme] = useState<'classic' | 'black' | 'silver' | 'dark'>('classic');
     const inputRef = useRef<HTMLInputElement>(null);
 
     // Load settings on mount
@@ -89,6 +90,7 @@ export function IPod() {
         const settings = loadSettings();
         setVolume(settings.volume);
         setClickSounds(settings.clickSounds);
+        setIpodTheme(settings.theme);
     }, [setVolume]);
 
     // Initial State
@@ -131,6 +133,39 @@ export function IPod() {
                         }
                     },
                     {
+                        label: `iPod Theme`,
+                        type: 'navigation',
+                        target: 'ipod-theme'
+                    },
+                    {
+                        label: "Backup Playlists",
+                        type: 'action',
+                        action: () => {
+                            // Export all playlists as JSON
+                            const playlistsData = {
+                                version: '2.0.0',
+                                exportDate: new Date().toISOString(),
+                                playlists: mixes.map(mix => ({
+                                    id: mix.id,
+                                    title: mix.title,
+                                    color: mix.color,
+                                    songs: mix.songs
+                                }))
+                            };
+
+                            const dataStr = JSON.stringify(playlistsData, null, 2);
+                            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                            const url = URL.createObjectURL(dataBlob);
+                            const link = document.createElement('a');
+                            link.href = url;
+                            link.download = `tfi-stereo-playlists-${new Date().toISOString().split('T')[0]}.json`;
+                            link.click();
+                            URL.revokeObjectURL(url);
+
+                            alert('Playlists exported successfully!');
+                        }
+                    },
+                    {
                         label: "About",
                         type: 'action',
                         action: () => {
@@ -140,7 +175,7 @@ export function IPod() {
                                 viewType: 'message',
                                 selectedIndex: 0,
                                 data: {
-                                    message: 'TFI Stereo\nVersion 2.0.0\n\nMade with love by TFIverse\n\nTwitter: @TFI_verse\nGitHub: Vikky-Prabhas/TFImusic\n\nA premium iPod experience\nbuilt with Next.js'
+                                    message: '━━━━━━━━━━━━━━━━\n\nTFI Stereo\n\n━━━━━━━━━━━━━━━━\n\nVersion 2.0.0\n\n━━━━━━━━━━━━━━━━\n\nCrafted with ♥\nby TFIverse\n\n@TFI_verse\n\n━━━━━━━━━━━━━━━━'
                                 }
                             }]);
                         }
@@ -166,6 +201,23 @@ export function IPod() {
                         }
                     }
                 ];
+
+            case 'ipod-theme':
+                // iPod Theme Selection
+                const themeNames = {
+                    'classic': 'Classic (White)',
+                    'black': 'Black',
+                    'silver': 'Silver',
+                    'dark': 'Dark'
+                };
+                return (['classic', 'black', 'silver', 'dark'] as const).map(theme => ({
+                    label: `${themeNames[theme]}${ipodTheme === theme ? ' ✓' : ''}`,
+                    type: 'action',
+                    action: () => {
+                        setIpodTheme(theme);
+                        saveSettings({ theme });
+                    }
+                }));
 
             case 'volume-settings':
                 // Volume adjustment screen
@@ -328,6 +380,34 @@ export function IPod() {
                         action: () => playMixSong(mix.id, idx)
                     }));
 
+                    songItems.push({
+                        label: "[Share Playlist]",
+                        type: 'action',
+                        action: () => {
+                            // Export this playlist as JSON
+                            const playlistData = {
+                                version: '2.0.0',
+                                exportDate: new Date().toISOString(),
+                                playlist: {
+                                    id: mix.id,
+                                    title: mix.title,
+                                    color: mix.color,
+                                    songs: mix.songs
+                                }
+                            };
+
+                            const dataStr = JSON.stringify(playlistData, null, 2);
+                            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                            const url = URL.createObjectURL(dataBlob);
+                            const link = document.createElement('a');
+                            link.href = url;
+                            link.download = `${mix.title.replace(/[^a-z0-9]/gi, '-')}-${new Date().toISOString().split('T')[0]}.json`;
+                            link.click();
+                            URL.revokeObjectURL(url);
+
+                            alert(`"${mix.title}" exported successfully!`);
+                        }
+                    });
                     songItems.push({ label: "[Rename Playlist]", type: 'action', action: () => goToRename(mix) });
                     songItems.push({ label: "[Delete Playlist]", type: 'action', action: () => handleDeletePlaylist(mix.id) });
                     return songItems;
@@ -428,7 +508,7 @@ export function IPod() {
 
                 return [];
         }
-    }, [currentView.id, currentView.data, currentView.staticItems, mixes]); // DEPENDENCIES: Excludes selectedIndex!
+    }, [currentView.id, currentView.data, currentView.staticItems, mixes, volume, clickSounds, ipodTheme]); // Added volume, clickSounds, ipodTheme for real-time updates
 
     // Actions
     const createNewPlaylist = () => {
@@ -745,12 +825,27 @@ export function IPod() {
         }
     };
 
+    // Theme-based styling
+    const getThemeClasses = () => {
+        switch (ipodTheme) {
+            case 'black':
+                return 'bg-gradient-to-br from-[#1a1a1a] via-[#2a2a2a] to-[#1a1a1a] border-[#111]';
+            case 'silver':
+                return 'bg-gradient-to-br from-[#c0c0c0] via-[#d8d8d8] to-[#b0b0b0] border-[#aaa]';
+            case 'dark':
+                return 'bg-gradient-to-br from-[#2c2c2c] via-[#3a3a3a] to-[#2c2c2c] border-[#222]';
+            case 'classic':
+            default:
+                return 'bg-gradient-to-br from-[#e0e0e0] via-[#f2f2f2] to-[#d0d0d0] border-[#d4d4d4]';
+        }
+    };
+
     return (
         <div className="fixed inset-0 flex items-center justify-center bg-zinc-900 p-4 overflow-hidden pointer-events-none">
 
-            {/* iPod Case - Classic Silver Edition */}
+            {/* iPod Case */}
             <motion.div
-                className="relative w-full max-w-[450px] aspect-[1/1.65] bg-gradient-to-br from-[#e0e0e0] via-[#f2f2f2] to-[#d0d0d0] rounded-[3.5rem] shadow-2xl flex flex-col items-center p-6 border-[6px] border-[#d4d4d4] ring-1 ring-black/5 will-change-transform contain-layout pointer-events-auto"
+                className={`relative w-full max-w-[450px] aspect-[1/1.65] ${getThemeClasses()} rounded-[3.5rem] shadow-2xl flex flex-col items-center p-6 border-[6px] ring-1 ring-black/5 will-change-transform contain-layout pointer-events-auto`}
                 initial={{ y: 50, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ type: "spring", stiffness: 120, damping: 20 }}
@@ -777,6 +872,7 @@ export function IPod() {
                         progress={progress}
                         duration={duration}
                         isLoading={isLoading}
+                        message={currentView.data?.message || ''}
                         isFlipped={currentView.isFlipped}
                         trackIndex={currentView.trackIndex}
                         searchQuery={currentView.viewType === 'search' ? currentView.searchQuery : undefined}
@@ -845,6 +941,7 @@ export function IPod() {
                 {/* Click Wheel Area (Bottom) */}
                 <div className="flex-1 w-full flex items-start justify-center relative z-10">
                     <ClickWheel
+                        theme={ipodTheme}
                         enableSounds={clickSounds}
                         onScroll={(direction) => {
                             if (currentView.viewType === 'game') {

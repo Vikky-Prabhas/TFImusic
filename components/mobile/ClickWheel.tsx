@@ -5,6 +5,7 @@ import { Play, Pause, FastForward, Rewind } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
 
 interface ClickWheelProps {
+    theme?: 'classic' | 'black' | 'silver' | 'dark';
     enableSounds?: boolean;
     onScroll: (direction: 1 | -1) => void;
     onSelect: () => void;
@@ -14,7 +15,7 @@ interface ClickWheelProps {
     onPrev: () => void;
 }
 
-export function ClickWheel({ enableSounds = true, onScroll, onSelect, onMenu, onPlayPause, onNext, onPrev }: ClickWheelProps) {
+export function ClickWheel({ theme = 'classic', enableSounds = true, onScroll, onSelect, onMenu, onPlayPause, onNext, onPrev }: ClickWheelProps) {
     const wheelRef = useRef<HTMLDivElement>(null);
     const [isDragging, setIsDragging] = useState(false);
     const lastAngle = useRef<number | null>(null);
@@ -85,6 +86,7 @@ export function ClickWheel({ enableSounds = true, onScroll, onSelect, onMenu, on
 
     // Synthetic Click Sound helper
     const playClickSound = (type: 'tick' | 'select' = 'tick') => {
+        if (!enableSounds) return; // Respect user setting
         try {
             const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
             if (!AudioContext) return;
@@ -158,6 +160,39 @@ export function ClickWheel({ enableSounds = true, onScroll, onSelect, onMenu, on
     // Center Button Refs
     const isCenterPressed = useRef(false);
 
+    // Theme-based colors (matching real iPod designs)
+    const getThemeColors = () => {
+        switch (theme) {
+            case 'black':
+                return {
+                    wheel: 'bg-[#2a2a2a]',
+                    button: 'from-[#3a3a3a] to-[#2a2a2a]',
+                    text: 'text-gray-500'
+                };
+            case 'silver':
+                return {
+                    wheel: 'bg-[#d0d0d0]',
+                    button: 'from-[#f0f0f0] to-[#d0d0d0]',
+                    text: 'text-gray-500'
+                };
+            case 'dark':
+                return {
+                    wheel: 'bg-[#3a3a3a]',
+                    button: 'from-[#4a4a4a] to-[#3a3a3a]',
+                    text: 'text-gray-400'
+                };
+            case 'classic':
+            default:
+                return {
+                    wheel: 'bg-[#f2f2f2]',
+                    button: 'from-[#fff] to-[#e0e0e0]',
+                    text: 'text-gray-400'
+                };
+        }
+    };
+
+    const colors = getThemeColors();
+
     // Helper for preventing scroll interference while allowing clicks
     // Reverting to direct onPointerDown handler for instant mobile response
     const createButtonHandler = (action: () => void) => (e: React.PointerEvent) => {
@@ -169,24 +204,24 @@ export function ClickWheel({ enableSounds = true, onScroll, onSelect, onMenu, on
     return (
         <div
             ref={wheelRef}
-            className="relative size-64 bg-[#f2f2f2] rounded-full shadow-[inset_0_5px_10px_rgba(0,0,0,0.05),0_10px_20px_rgba(0,0,0,0.4)] flex items-center justify-center cursor-pointer active:brightness-95 transition-all select-none touch-none pointer-events-auto"
+            className={`relative size-64 ${colors.wheel} rounded-full shadow-[inset_0_5px_10px_rgba(0,0,0,0.05),0_10px_20px_rgba(0,0,0,0.4)] flex items-center justify-center cursor-pointer active:brightness-95 transition-all select-none touch-none pointer-events-auto`}
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
             onPointerLeave={handlePointerUp}
         >
             {/* Visual Labels (Pointer Events None to let Wheel capture) */}
-            <div className="absolute top-4 font-bold text-gray-400 font-sans tracking-wide text-[11px] pointer-events-none">MENU</div>
-            <div className="absolute left-4 text-gray-400 pointer-events-none"><Rewind size={18} fill="currentColor" /></div>
-            <div className="absolute right-4 text-gray-400 pointer-events-none"><FastForward size={18} fill="currentColor" /></div>
-            <div className="absolute bottom-4 text-gray-400 flex gap-0.5 pointer-events-none">
+            <div className={`absolute top-4 font-bold ${colors.text} font-sans tracking-wide text-[11px] pointer-events-none`}>MENU</div>
+            <div className={`absolute left-4 ${colors.text} pointer-events-none`}><Rewind size={18} fill="currentColor" /></div>
+            <div className={`absolute right-4 ${colors.text} pointer-events-none`}><FastForward size={18} fill="currentColor" /></div>
+            <div className={`absolute bottom-4 ${colors.text} flex gap-0.5 pointer-events-none`}>
                 <Play size={10} fill="currentColor" />
                 <Pause size={10} fill="currentColor" />
             </div>
 
             {/* Center Button (Distinct) */}
             <motion.div
-                className="size-24 bg-gradient-to-b from-[#fff] to-[#e0e0e0] rounded-full shadow-[inset_0_2px_5px_rgba(255,255,255,1),0_2px_5px_rgba(0,0,0,0.1)] active:scale-95 transition-all z-20 relative"
+                className={`size-24 bg-gradient-to-b ${colors.button} rounded-full shadow-[inset_0_2px_5px_rgba(255,255,255,1),0_2px_5px_rgba(0,0,0,0.1)] active:scale-95 transition-all z-20 relative`}
                 whileTap={{ scale: 0.95 }}
                 onPointerDown={(e) => {
                     e.stopPropagation(); // Stop propagation to wheel
